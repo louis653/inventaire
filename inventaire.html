@@ -4,9 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Inventaire Code 39</title>
+<script src="https://unpkg.com/html5-qrcode"></script>
 <style>
   body { font-family: sans-serif; padding: 20px; }
-  input { font-size: 1.5em; padding: 10px; width: 100%; margin-bottom: 20px; }
+  #reader { width: 100%; max-width: 400px; margin-bottom: 20px; }
   ul { list-style: none; padding: 0; }
   li { padding: 5px 0; border-bottom: 1px solid #ccc; font-size: 1.2em; }
   button { padding: 10px 20px; font-size: 1em; margin-top: 10px; }
@@ -14,28 +15,43 @@
 </head>
 <body>
 <h1>Inventaire Code 39</h1>
-<input id="scan" placeholder="Scannez un code-barres" autofocus />
+
+<div id="reader"></div>
 <ul id="liste"></ul>
 <button id="export">Exporter en CSV</button>
 
 <script>
 const inventaire = [];
-const scanInput = document.getElementById('scan');
 const liste = document.getElementById('liste');
 const exportBtn = document.getElementById('export');
 
-scanInput.addEventListener('keypress', function(e) {
-    if (e.key === "Enter") {
-        let code = this.value.replace(/\*/g, "").trim(); // retirer les * du Code 39
-        if(code && !inventaire.includes(code)) {
-            inventaire.push(code);
-            let li = document.createElement('li');
-            li.textContent = code;
-            liste.appendChild(li);
-        }
-        this.value = "";
+function ajouterCode(code) {
+    code = code.replace(/\*/g, "").trim();
+    if(code && !inventaire.includes(code)) {
+        inventaire.push(code);
+        let li = document.createElement('li');
+        li.textContent = code;
+        liste.appendChild(li);
     }
-});
+}
+
+// Initialiser le scanner
+const html5QrcodeScanner = new Html5Qrcode("reader");
+
+html5QrcodeScanner.start(
+    { facingMode: "environment" }, // caméra arrière
+    {
+        fps: 10,    // images par seconde
+        qrbox: 250, // zone de scan
+        formatsToSupport: ["CODE_39"] // scanner Code 39
+    },
+    (decodedText, decodedResult) => {
+        ajouterCode(decodedText);
+    },
+    (errorMessage) => {
+        // erreurs de scan ignorées
+    }
+).catch(err => console.error(err));
 
 exportBtn.addEventListener('click', () => {
     if(inventaire.length === 0) return alert("Aucun code à exporter");
